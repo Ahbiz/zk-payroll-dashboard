@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Payroll owner transfer review screen** (#546): `/settings/roles` gains a review step for handing payroll ownership (the company admin wallet) to another account. The screen shows a masked current → new owner summary and the consequences, and requires a typed `TRANSFER OWNERSHIP` confirmation plus an acknowledgement. Transfers are blocked for invalid Stellar addresses (checksum verified), self-transfer, and while any payroll run is still in flight. Read-only-role and out-of-directory recipients get warnings. Addresses are always masked and no payroll amounts appear in the UI, messages, or the audit entry.
 - **Employee identifier format helper text** (#541): The Add Employee wallet address field now explains the Stellar public key format (56 characters, starts with G, A–Z/2–7, never a secret key) and gives specific, actionable validation errors without echoing the entered address.
 - **Payout count limit indicator** (#542): The payroll review step shows payouts against the capacity policy's batch limit, warns from 80%, and blocks Continue with remediation (batches needed) when a run exceeds the limit.
 - **Audit hold release confirmation dialog** (#543): Compliance holds can now be released from the Holds tab through a confirmation dialog that requires a written justification and an explicit acknowledgement; releases are recorded in the audit activity feed and shown on the hold.
