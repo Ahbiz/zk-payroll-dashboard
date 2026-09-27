@@ -86,6 +86,33 @@ jobs:
               return pull;
             }
 
+            async function closeLinkedIssues(pr) {
+              const refs = new Set();
+              const text = [pr.title || '', pr.body || ''].join('\n');
+              const closingPattern = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+([^\n]+)/gi;
+              const referencePattern = /(?:(?<owner>[A-Za-z0-9_.-]+)\/(?<repo>[A-Za-z0-9_.-]+))?#(?<number>\d+)/g;
+              function addReferences(value) {
+                for (const ref of value.matchAll(referencePattern)) {
+                  const targetOwner = (ref.groups.owner || owner).toLowerCase();
+                  const targetRepo = (ref.groups.repo || repo).toLowerCase();
+                  if (targetOwner === owner.toLowerCase() && targetRepo === repo.toLowerCase()) refs.add(Number(ref.groups.number));
+                }
+              }
+              for (const match of text.matchAll(closingPattern)) addReferences(match[1]);
+              const titleIssue = (pr.title || '').match(/\(#(?<number>\d+)\)\s*$/);
+              if (titleIssue) refs.add(Number(titleIssue.groups.number));
+              for (const issue_number of refs) {
+                try {
+                  const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number });
+                  if (issue.pull_request || issue.state === 'closed') continue;
+                  await github.rest.issues.update({ owner, repo, issue_number, state: 'closed', state_reason: 'completed' });
+                  await github.rest.issues.createComment({ owner, repo, issue_number, body: 'Closed automatically because PR #' + pr.number + ' was merged.' });
+                  core.info('Closed linked issue #' + issue_number + ' for PR #' + pr.number + '.');
+                } catch (error) {
+                  core.warning('Could not close linked issue #' + issue_number + ': ' + error.message);
+                }
+              }
+            }
             async function mergePullRequest(pr) {
               const mergeMethods = ["squash", "merge", "rebase"];
               let lastError;
@@ -100,6 +127,7 @@ jobs:
                     sha: pr.head.sha
                   });
 
+                  await closeLinkedIssues(pr);
                   core.info(`Merged PR #${pr.number} using ${merge_method}.`);
                   return true;
                 } catch (error) {
