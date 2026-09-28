@@ -15,6 +15,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
+import DelegatedApproverPanel from "@/components/features/approvals/DelegatedApproverPanel";
 
 export function ExecutiveApprovalQueue() {
   const { drafts, approveDraft, rejectDraft, requestCorrection, resubmitDraft } =
@@ -314,6 +315,9 @@ export function ExecutiveApprovalQueue() {
           ))}
         </div>
       )}
+
+      <DelegatedApproverPanel />
     </div>
   );
 }
+

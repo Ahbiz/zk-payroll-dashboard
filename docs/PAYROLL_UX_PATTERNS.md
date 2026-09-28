@@ -551,17 +551,39 @@ These are warnings, not blockers: the new owner has a read-only role (auditor or
 - `buildOwnerTransferAuditEntry` records only the action, both masked addresses, and a timestamp.
 - There is no backend endpoint yet: `onSubmit` receives the audit-safe entry for a future API or on-chain call.
 
+## #536 — Delegated Approver Management Panel
+
+**Goal:** Enable managing authorized delegated signers and surrogate approvers within the payroll approval workflow while strictly enforcing address validation, duplicate prevention, and zero exposure of sensitive financial values.
+
+### Files
+
+| File | Purpose |
+| --- | --- |
+| `stores/delegatedApprovers.ts` | Zustand store with `persist` middleware (`zk_delegated_approvers_store`). Holds delegated approvers list and CRUD actions. |
+| `lib/validation/delegatedApprover.ts` | Validation logic enforcing non-empty, valid format (Stellar `G...` or delegate identifier), and duplicate checking. |
+| `components/features/approvals/DelegatedApproverPanel.tsx` | React UI panel component for viewing, adding, and removing delegated approvers. |
+| `__tests__/components/DelegatedApproverPanel.test.tsx` | Unit and integration test suite covering rendering, add/remove actions, validation errors, and privacy guarantees. |
+
+### Validation Rules & Privacy Guarantees
+
+- **Empty Input:** Rejects empty or whitespace-only inputs (`"Approver address or identifier is required."`).
+- **Format Validation:** Validates against Stellar address format (`^G[A-Z0-9]{55}$`) or standard delegate identifier pattern (`^[a-zA-Z0-9_-]{3,64}$`).
+- **Duplicate Prevention:** Checks case-insensitive matches against existing approver list (`"Duplicate approver address or identifier already exists."`).
+- **Privacy Enforcement:** All error messages and UI controls omit sensitive payroll data (salaries, employee names, payment amounts).
+
 ## Test coverage summary
 
 | #510 | `payroll-preflight-results-screen.test.tsx` | Renders readiness score, blocker cards, warnings, passed checks, and dry-run summary | Disables execution button when blockers exist; enables fix actions and re-run dry run |
 | #509 | `payroll-amendment-history-panel.test.tsx` | Displays authorized amendment revision history, safe reason labels, and details drawer | Filters by status & search query; exports safe JSON/CSV metadata |
 | #514 | `payroll-cancellation-reason-selector.test.tsx` | Enforces selecting documented cancellation reason before confirming cancellation | Provides helper text and custom audit notes input; disables confirmation until reason selected |
 | #515 | `audit-grant-scope-details-drawer.test.tsx` | Displays auditor identity, expiry indicator, accessible scopes, restricted scopes, and masking tier | Triggers extend, revoke, and export scope callbacks |
+| #536 | `DelegatedApproverPanel.test.tsx` | Renders panel, adds valid approver, rejects duplicates/invalid inputs with clear error, removes approver, and enforces zero sensitive payroll data exposure |
 
 Run with:
 
 ```bash
 npm test
 ```
+
 
 

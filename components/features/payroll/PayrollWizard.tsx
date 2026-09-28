@@ -1569,7 +1569,7 @@ function SubmitStep({
             aria-label={getPayrollButtonAriaLabel("Retry submission", "error")}
             title={
               isWrongNetwork
-                ? `Switch to ${EXPECTED_NETWORK} in your wallet`
+                ? `Switch to ${expectedNetwork} in your wallet`
                 : undefined
             }
             className="px-4 py-2 rounded-md bg-red-50 text-red-700 text-sm font-medium hover:bg-red-100 border border-red-200 transition-colors inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
