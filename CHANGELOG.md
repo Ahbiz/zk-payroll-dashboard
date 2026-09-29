@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Organization Policy Migration Validation (#599)**: Validates an organization's
+  payroll policy configuration against the current configuration schema before it is
+  used for payroll or migrated.
+  - New `validateCompanyConfigMigration` API (`lib/company/policyMigration.ts`)
+    detecting schema version, migration eligibility, and already-current state
+  - New `configSchemaVersion` field on `CompanyConfig` (defaults to version 1 when
+    absent; current version is 2) with legacy-policy migration guardrails
+  - Actionable migration banner and per-issue messages in the Configuration Health
+    checker (Company Setup and Settings pages)
+  - Focused unit tests for valid, invalid, unsupported-version, and already-current
+    policy states
+
 - **Dashboard payout destination change review (#596)**: Interactive review component and validation rules for reviewing, confirming, or rejecting employee payout destination changes in the dashboard layer of ZK Payroll
   - Address verification prevents confirming invalid Stellar address formats or unchanged addresses matching the previous destination
   - Cooldown guardrail enforces wallet rotation cooldown lock to prevent destination changes mid-cooldown
@@ -17,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dual-mode interface: single-employee drawer review and dashboard-wide overview of all pending destination changes
   - Zero PII / salary leakage: Stellar addresses remain masked (`GDQP2K…4W37`) and financial details are never rendered or logged
   - New modules: `src/payroll/payoutDestinationReview.ts`, `components/review/PayoutDestinationChangeReview.tsx`, `components/features/payroll/PayoutDestinationChangeReview.tsx`
-
 
 - **SDK Blocked Execution Diagnostics** (#605): Pure, privacy-preserving diagnostics engine in the SDK layer for identifying, categorizing, and explaining why a payroll execution is blocked prior to on-chain submission.
   - Identifies blockers and warnings across treasury reserves, ZK proof readiness/freshness, contract pause states, batch capacity limits, executive approvals, recipient eligibility, wallet rotation cooldowns, session authentication, and **run lifecycle state** (already-executed and cancelled runs).
