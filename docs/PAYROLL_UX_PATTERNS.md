@@ -581,6 +581,10 @@ These are warnings, not blockers: the new owner has a read-only role (auditor or
 
 **Goal:** Prevent accidental over-fetching and show clear pagination boundaries in large payroll lists without exposing sensitive salary values or employee PII.
 
+## #605 — SDK Blocked Execution Diagnostics
+
+**Goal:** Provide a typed, pure, privacy-safe diagnostics engine in the SDK layer of ZK Payroll to analyze, categorize, and explain why payroll executions are blocked, along with actionable remediations and formatted diagnostic reports.
+
 ### Files
 
 | File | Purpose |
@@ -625,6 +629,27 @@ These are warnings, not blockers: the new owner has a read-only role (auditor or
 | `components/payroll/CancellableRefreshButton.tsx` | UI button displaying active refreshing indicator with a Cancel button. |
 | `__tests__/cancellable-data-refresh.test.tsx` | Unit and component tests for successful refresh, mid-flight cancellation, and error handling. |
 
+| `lib/sdk/blockedExecutionDiagnostics.ts` | Pure diagnostics engine evaluating treasury reserves, proof validity, capacity limits, approvals, recipient eligibility, and auth state. |
+| `src/lib/sdk/blockedExecutionDiagnostics.ts` | SDK re-export module for dashboard and external consumers. |
+| `lib/sdk/index.ts` / `src/lib/sdk/index.ts` | SDK root package index exporting diagnostic tools, types, and assertions. |
+| `__tests__/blocked-execution-diagnostics.test.ts` | Comprehensive unit and integration test suite (31 tests) covering success, blocker categories, error assertions, and privacy guarantees. |
+
+### Categories & Blocker Codes
+
+- **Treasury:** `TREASURY_INSUFFICIENT_FUNDS`, `TREASURY_BELOW_RESERVE_BUFFER`, `TREASURY_ACCOUNT_UNAVAILABLE`.
+- **Proof:** `PROOF_MISSING`, `PROOF_EXPIRED`, `PROOF_UNVERIFIED`, `PROOF_VERIFICATION_FAILED`.
+- **Contract & Network:** `CONTRACT_PAUSED`, `CONTRACT_LOCKED`, `UNSUPPORTED_NETWORK`.
+- **Policy & Limits:** `BATCH_SIZE_EXCEEDED`, `BATCH_PAYOUT_EXCEEDED`, `INSTRUCTION_VERSION_STALE`.
+- **Approvals & Governance:** `APPROVAL_REQUIRED`, `APPROVAL_REJECTED`, `APPROVAL_EXPIRED`, `APPROVAL_CONFLICT`.
+- **Recipients & Commitments:** `RECIPIENT_EMPTY`, `RECIPIENT_INELIGIBLE`, `COMMITMENT_MISSING`, `RECIPIENT_COOLDOWN_ACTIVE`, `DESTINATION_UNVERIFIED`.
+- **Auth & Session:** `SESSION_EXPIRED`, `OPERATOR_UNAUTHORIZED`, `EXECUTION_NONCE_INVALID`, `DUPLICATE_EXECUTION`.
+
+### Privacy Guarantees
+
+- **No Individual Salary Exposure:** All diagnostics report aggregate shortfalls and counts only.
+- **Sanitized Reports:** Formatted diagnostic bundles omit private keys, mnemonics, or individual secrets.
+- **Actionable Remediation:** Each blocker carries a typed `remediation` with clear human-readable steps and action routes.
+
 ## Test coverage summary
 
 | #510 | `payroll-preflight-results-screen.test.tsx` | Renders readiness score, blocker cards, warnings, passed checks, and dry-run summary | Disables execution button when blockers exist; enables fix actions and re-run dry run |
@@ -637,6 +662,8 @@ These are warnings, not blockers: the new owner has a read-only role (auditor or
 | #518 | `payroll-run-amendment-review.test.tsx` | Reviews proposed amendments non-destructively, preserves original payroll record intact, renders safe diff & stale/policy warning alerts |
 | #517 | `treasury-snapshot-activity-card.test.tsx` | Calculates coverage ratio & status badges, renders truncated Merkle digests & snapshot activity logs, triggers actionable deficit warnings |
 | #519 | `cancellable-data-refresh.test.tsx` | Manages AbortController signal, cancels in-flight refreshes, maintains consistent loading states, displays actionable privacy-safe feedback |
+
+| #605 | `blocked-execution-diagnostics.test.ts` | Validates ready states, treasury/proof/policy/approval/recipient/auth blockers, assertion errors, and privacy report formatting |
 
 Run with:
 

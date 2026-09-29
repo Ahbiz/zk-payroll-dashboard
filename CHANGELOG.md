@@ -18,6 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Zero PII / salary leakage: Stellar addresses remain masked (`GDQP2K…4W37`) and financial details are never rendered or logged
   - New modules: `src/payroll/payoutDestinationReview.ts`, `components/review/PayoutDestinationChangeReview.tsx`, `components/features/payroll/PayoutDestinationChangeReview.tsx`
 
+
+- **SDK Blocked Execution Diagnostics** (#605): Pure, privacy-preserving diagnostics engine in the SDK layer for identifying, categorizing, and explaining why a payroll execution is blocked prior to on-chain submission.
+  - Identifies blockers and warnings across treasury reserves, ZK proof readiness/freshness, contract pause states, batch capacity limits, executive approvals, recipient eligibility, wallet rotation cooldowns, session authentication, and **run lifecycle state** (already-executed and cancelled runs).
+  - New `RUN_ALREADY_EXECUTED` blocker: prevents re-submission of a run that already has a recorded `executedAt` on-chain confirmation timestamp.
+  - New `RUN_CANCELLED` blocker: prevents execution of any run whose status is `cancelled`, regardless of other conditions.
+  - `diagnosePayrollRun` convenience helper now automatically derives `isAlreadyExecuted` from `run.executedAt` and `isCancelled` from `run.status === "cancelled"`, so domain-model consumers get lifecycle protection without manual flag wiring.
+  - Structured `BlockedExecutionReport` rollup with categorized diagnostics, primary blocker identification, typed remediations, and formatted privacy-safe text reports.
+  - Exported through `lib/sdk/blockedExecutionDiagnostics.ts` and SDK root index `lib/sdk/index.ts`.
+
+### Fixed
+
+- **Blocked-execution test mocks** (#605): Corrected all five `PayrollRun` object literals in `__tests__/blocked-execution-diagnostics.test.ts` that would have failed `tsc --noEmit` under `strict: true`:
+  - Added missing required `PayrollTransaction` fields (`companyId`, `timestamp`, `createdAt`) to every mock.
+  - Changed `status: "completed"` to `status: "verified"` — `"completed"` is not a member of the `"pending" | "verified" | "failed" | "cancelled"` union.
+  - Replaced `proof` object literals (`{ circuit, hash, timestamp, status }`) with plain proof-hash strings matching `PayrollTransaction.proof: string`.
+  - Removed excess properties (`date`, `type`, `recipient`, `amount`) that are not defined on `PayrollRun` or `PayrollTransaction` and would be rejected by TypeScript's strict excess-property checking.
 - **Payroll instruction version badge** (#534): The payroll wizard now shows which payroll instruction (compiled policy payload) governs the run
   - The review and confirmation steps render a version pill next to the "Payroll instructions" label, comparing the version snapshotted when the draft started against the currently saved policy version
   - Indigo `vN` when the draft matches the active policy; amber `vN · drafted` with a tooltip when a newer policy version was saved mid-run — the run keeps its drafted version instead of silently adopting new rules, and the tooltip names the remediation (start a new draft)
