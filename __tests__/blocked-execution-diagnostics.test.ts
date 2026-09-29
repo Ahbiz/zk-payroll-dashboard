@@ -491,21 +491,14 @@ describe("SDK Blocked Execution Diagnostics (#605)", () => {
     it("diagnoses a PayrollRun domain object directly", () => {
       const mockRun: PayrollRun = {
         id: "run_domain_001",
-        date: "2026-09-30",
+        companyId: "company_001",
+        timestamp: "2026-09-30T00:00:00Z",
+        createdAt: "2026-09-30T00:00:00Z",
         totalAmount: 18000,
         employeeCount: 4,
-        status: "completed",
-        type: "regular",
-        txHash: "0xtxhash_mock",
-        recipient: "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37",
-        amount: 18000,
+        status: "verified",
+        proof: "zk_proof_hash_mock_001",
         employeeIds: ["emp_1", "emp_2", "emp_3", "emp_4"],
-        proof: {
-          circuit: "zk_payroll_v2",
-          hash: "0xproof_hash_mock",
-          timestamp: new Date().toISOString(),
-          status: "verified",
-        },
         approvalStatus: "approved",
       };
 
@@ -521,14 +514,13 @@ describe("SDK Blocked Execution Diagnostics (#605)", () => {
     it("detects missing proof on PayrollRun", () => {
       const mockRunWithoutProof: PayrollRun = {
         id: "run_domain_002",
-        date: "2026-09-30",
+        companyId: "company_001",
+        timestamp: "2026-09-30T00:00:00Z",
+        createdAt: "2026-09-30T00:00:00Z",
         totalAmount: 18000,
         employeeCount: 4,
         status: "pending",
-        type: "regular",
-        txHash: "",
-        recipient: "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37",
-        amount: 18000,
+        proof: "",
         employeeIds: ["emp_1", "emp_2", "emp_3", "emp_4"],
         approvalStatus: "approved",
       };
@@ -544,21 +536,14 @@ describe("SDK Blocked Execution Diagnostics (#605)", () => {
     it("maps executedAt to isAlreadyExecuted — blocks when run has a recorded execution timestamp", () => {
       const mockExecutedRun: PayrollRun = {
         id: "run_domain_003",
-        date: "2026-09-30",
+        companyId: "company_001",
+        timestamp: "2026-09-29T10:00:00Z",
+        createdAt: "2026-09-29T08:00:00Z",
         totalAmount: 18000,
         employeeCount: 4,
         status: "verified",
-        type: "regular",
-        txHash: "0xtxhash_executed",
-        recipient: "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37",
-        amount: 18000,
+        proof: "zk_proof_hash_executed_003",
         employeeIds: ["emp_1", "emp_2", "emp_3", "emp_4"],
-        proof: {
-          circuit: "zk_payroll_v2",
-          hash: "0xproof_executed",
-          timestamp: new Date().toISOString(),
-          status: "verified",
-        },
         approvalStatus: "approved",
         executedAt: "2026-09-29T10:00:00Z",
       };
@@ -575,21 +560,14 @@ describe("SDK Blocked Execution Diagnostics (#605)", () => {
     it("maps status === 'cancelled' to isCancelled — blocks when run is cancelled", () => {
       const mockCancelledRun: PayrollRun = {
         id: "run_domain_004",
-        date: "2026-09-30",
+        companyId: "company_001",
+        timestamp: "2026-09-28T09:00:00Z",
+        createdAt: "2026-09-27T08:00:00Z",
         totalAmount: 18000,
         employeeCount: 4,
         status: "cancelled",
-        type: "regular",
-        txHash: "",
-        recipient: "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37",
-        amount: 18000,
+        proof: "zk_proof_hash_cancelled_004",
         employeeIds: ["emp_1", "emp_2", "emp_3", "emp_4"],
-        proof: {
-          circuit: "zk_payroll_v2",
-          hash: "0xproof_cancelled",
-          timestamp: new Date().toISOString(),
-          status: "verified",
-        },
         approvalStatus: "approved",
         cancellationReason: "manual_request",
         cancelledAt: "2026-09-28T09:00:00Z",
@@ -607,21 +585,14 @@ describe("SDK Blocked Execution Diagnostics (#605)", () => {
     it("does not set lifecycle flags when run is active with no executedAt", () => {
       const mockPendingRun: PayrollRun = {
         id: "run_domain_005",
-        date: "2026-09-30",
+        companyId: "company_001",
+        timestamp: "2026-09-30T00:00:00Z",
+        createdAt: "2026-09-30T00:00:00Z",
         totalAmount: 18000,
         employeeCount: 4,
         status: "pending",
-        type: "regular",
-        txHash: "",
-        recipient: "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37",
-        amount: 18000,
+        proof: "zk_proof_hash_pending_005",
         employeeIds: ["emp_1", "emp_2", "emp_3", "emp_4"],
-        proof: {
-          circuit: "zk_payroll_v2",
-          hash: "0xproof_pending",
-          timestamp: new Date().toISOString(),
-          status: "verified",
-        },
         approvalStatus: "approved",
         executedAt: null,
       };
