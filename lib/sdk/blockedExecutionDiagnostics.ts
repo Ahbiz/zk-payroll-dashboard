@@ -47,7 +47,9 @@ export type BlockedExecutionReasonCode =
   | "SESSION_EXPIRED"
   | "OPERATOR_UNAUTHORIZED"
   | "EXECUTION_NONCE_INVALID"
-  | "DUPLICATE_EXECUTION";
+  | "DUPLICATE_EXECUTION"
+  | "RUN_ALREADY_EXECUTED"
+  | "RUN_CANCELLED";
 
 export type BlockerSeverity = "blocker" | "warning" | "info";
 
@@ -125,6 +127,8 @@ export interface BlockedExecutionInput {
   isWrongNetwork?: boolean;
   hasInvalidNonce?: boolean;
   isDuplicate?: boolean;
+  isAlreadyExecuted?: boolean;
+  isCancelled?: boolean;
   instructionVersion?: {
     current: number;
     required: number;
@@ -625,6 +629,43 @@ export function diagnoseBlockedExecution(
     });
   }
 
+  // 10. Run Lifecycle State — Already Executed & Cancelled
+  if (input.isAlreadyExecuted) {
+    diagnostics.push({
+      code: "RUN_ALREADY_EXECUTED",
+      category: "policy",
+      severity: "blocker",
+      title: "Run Already Executed",
+      message:
+        "This payroll run has already been submitted and confirmed on-chain. Re-execution of a completed run is not permitted.",
+      remediation: {
+        label: "View Execution History",
+        action: "review_approvals",
+        href: "/payroll/history",
+        suggestedAction:
+          "Review the executed run in payroll history. Create a new run if an additional disbursement is required.",
+      },
+    });
+  }
+
+  if (input.isCancelled) {
+    diagnostics.push({
+      code: "RUN_CANCELLED",
+      category: "policy",
+      severity: "blocker",
+      title: "Run Has Been Cancelled",
+      message:
+        "This payroll run has been cancelled and is no longer eligible for on-chain submission.",
+      remediation: {
+        label: "Create New Payroll Run",
+        action: "resolve_recipients",
+        href: "/payroll",
+        suggestedAction:
+          "Create a new payroll run to proceed with disbursement for the intended recipients.",
+      },
+    });
+  }
+
   // Roll up diagnostic results
   const blockers = diagnostics.filter((d) => d.severity === "blocker");
   const warnings = diagnostics.filter((d) => d.severity === "warning");
@@ -689,6 +730,10 @@ export function diagnosePayrollRun(
     hasProof: Boolean(run.proof),
     proofStatus: run.proof ? (run.status === "pending" ? "pending" : "success") : "missing",
     approvalStatus: run.approvalStatus,
+    // Lifecycle state: a run with a recorded executedAt timestamp has already completed on-chain.
+    isAlreadyExecuted: Boolean(run.executedAt),
+    // A cancelled run is ineligible for (re-)execution regardless of other conditions.
+    isCancelled: run.status === "cancelled",
     ...overrides,
   });
 }

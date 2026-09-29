@@ -365,6 +365,76 @@ describe("SDK Blocked Execution Diagnostics (#605)", () => {
     });
   });
 
+  describe("Run Lifecycle State", () => {
+    it("blocks execution when the run has already been executed on-chain", () => {
+      const report = diagnoseBlockedExecution({
+        ...baseValidInput,
+        isAlreadyExecuted: true,
+      });
+
+      expect(report.canExecute).toBe(false);
+      expect(report.isBlocked).toBe(true);
+      expect(report.blockerCount).toBe(1);
+
+      const blocker = report.blockers[0];
+      expect(blocker.code).toBe("RUN_ALREADY_EXECUTED");
+      expect(blocker.category).toBe("policy");
+      expect(blocker.severity).toBe("blocker");
+      expect(blocker.message).toMatch(/already been submitted and confirmed/i);
+      expect(blocker.remediation.action).toBe("review_approvals");
+      expect(blocker.remediation.href).toBe("/payroll/history");
+
+      expect(hasExecutionBlocker(report, "RUN_ALREADY_EXECUTED")).toBe(true);
+      expect(hasExecutionBlocker(report, "policy")).toBe(true);
+    });
+
+    it("blocks execution when the run has been cancelled", () => {
+      const report = diagnoseBlockedExecution({
+        ...baseValidInput,
+        isCancelled: true,
+      });
+
+      expect(report.canExecute).toBe(false);
+      expect(report.isBlocked).toBe(true);
+      expect(report.blockerCount).toBe(1);
+
+      const blocker = report.blockers[0];
+      expect(blocker.code).toBe("RUN_CANCELLED");
+      expect(blocker.category).toBe("policy");
+      expect(blocker.severity).toBe("blocker");
+      expect(blocker.message).toMatch(/cancelled and is no longer eligible/i);
+      expect(blocker.remediation.action).toBe("resolve_recipients");
+      expect(blocker.remediation.href).toBe("/payroll");
+
+      expect(hasExecutionBlocker(report, "RUN_CANCELLED")).toBe(true);
+    });
+
+    it("blocks on both RUN_ALREADY_EXECUTED and RUN_CANCELLED when both flags are set", () => {
+      const report = diagnoseBlockedExecution({
+        ...baseValidInput,
+        isAlreadyExecuted: true,
+        isCancelled: true,
+      });
+
+      expect(report.isBlocked).toBe(true);
+      expect(report.blockerCount).toBe(2);
+      expect(hasExecutionBlocker(report, "RUN_ALREADY_EXECUTED")).toBe(true);
+      expect(hasExecutionBlocker(report, "RUN_CANCELLED")).toBe(true);
+    });
+
+    it("does not emit lifecycle blockers when neither flag is set", () => {
+      const report = diagnoseBlockedExecution({
+        ...baseValidInput,
+        isAlreadyExecuted: false,
+        isCancelled: false,
+      });
+
+      expect(hasExecutionBlocker(report, "RUN_ALREADY_EXECUTED")).toBe(false);
+      expect(hasExecutionBlocker(report, "RUN_CANCELLED")).toBe(false);
+      expect(report.canExecute).toBe(true);
+    });
+  });
+
   describe("Error Throwing & Assertions", () => {
     it("throws BlockedExecutionError with diagnostic details when execution is blocked", () => {
       const report = diagnoseBlockedExecution({
@@ -469,6 +539,99 @@ describe("SDK Blocked Execution Diagnostics (#605)", () => {
 
       expect(report.isBlocked).toBe(true);
       expect(hasExecutionBlocker(report, "PROOF_MISSING")).toBe(true);
+    });
+
+    it("maps executedAt to isAlreadyExecuted — blocks when run has a recorded execution timestamp", () => {
+      const mockExecutedRun: PayrollRun = {
+        id: "run_domain_003",
+        date: "2026-09-30",
+        totalAmount: 18000,
+        employeeCount: 4,
+        status: "verified",
+        type: "regular",
+        txHash: "0xtxhash_executed",
+        recipient: "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37",
+        amount: 18000,
+        employeeIds: ["emp_1", "emp_2", "emp_3", "emp_4"],
+        proof: {
+          circuit: "zk_payroll_v2",
+          hash: "0xproof_executed",
+          timestamp: new Date().toISOString(),
+          status: "verified",
+        },
+        approvalStatus: "approved",
+        executedAt: "2026-09-29T10:00:00Z",
+      };
+
+      const report = diagnosePayrollRun(mockExecutedRun, {
+        treasuryBalance: 50000,
+      });
+
+      expect(report.isBlocked).toBe(true);
+      expect(hasExecutionBlocker(report, "RUN_ALREADY_EXECUTED")).toBe(true);
+      expect(report.blockers[0].code).toBe("RUN_ALREADY_EXECUTED");
+    });
+
+    it("maps status === 'cancelled' to isCancelled — blocks when run is cancelled", () => {
+      const mockCancelledRun: PayrollRun = {
+        id: "run_domain_004",
+        date: "2026-09-30",
+        totalAmount: 18000,
+        employeeCount: 4,
+        status: "cancelled",
+        type: "regular",
+        txHash: "",
+        recipient: "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37",
+        amount: 18000,
+        employeeIds: ["emp_1", "emp_2", "emp_3", "emp_4"],
+        proof: {
+          circuit: "zk_payroll_v2",
+          hash: "0xproof_cancelled",
+          timestamp: new Date().toISOString(),
+          status: "verified",
+        },
+        approvalStatus: "approved",
+        cancellationReason: "manual_request",
+        cancelledAt: "2026-09-28T09:00:00Z",
+      };
+
+      const report = diagnosePayrollRun(mockCancelledRun, {
+        treasuryBalance: 50000,
+      });
+
+      expect(report.isBlocked).toBe(true);
+      expect(hasExecutionBlocker(report, "RUN_CANCELLED")).toBe(true);
+      expect(report.blockers[0].code).toBe("RUN_CANCELLED");
+    });
+
+    it("does not set lifecycle flags when run is active with no executedAt", () => {
+      const mockPendingRun: PayrollRun = {
+        id: "run_domain_005",
+        date: "2026-09-30",
+        totalAmount: 18000,
+        employeeCount: 4,
+        status: "pending",
+        type: "regular",
+        txHash: "",
+        recipient: "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37",
+        amount: 18000,
+        employeeIds: ["emp_1", "emp_2", "emp_3", "emp_4"],
+        proof: {
+          circuit: "zk_payroll_v2",
+          hash: "0xproof_pending",
+          timestamp: new Date().toISOString(),
+          status: "verified",
+        },
+        approvalStatus: "approved",
+        executedAt: null,
+      };
+
+      const report = diagnosePayrollRun(mockPendingRun, {
+        treasuryBalance: 50000,
+      });
+
+      expect(hasExecutionBlocker(report, "RUN_ALREADY_EXECUTED")).toBe(false);
+      expect(hasExecutionBlocker(report, "RUN_CANCELLED")).toBe(false);
     });
   });
 
