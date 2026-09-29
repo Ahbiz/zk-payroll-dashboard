@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { RefreshCw, Clock, CheckCircle, AlertCircle } from "lucide-react";
 
 interface CacheFreshnessIndicatorProps {
@@ -58,23 +58,13 @@ export function CacheFreshnessIndicator({
     }
   }, [lastRefreshedAt]);
 
-  // Initial calculation and interval
-  const [, forceUpdate] = useState({});
-  refreshRelativeTime();
-  const intervalId = typeof window !== 'undefined' ? setInterval(() => {
+  useEffect(() => {
     refreshRelativeTime();
-    forceUpdate(prev => ({ ...prev }));
-  }, 30000) : null;
-
-  // Cleanup
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const cleanup = () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-    // Use a ref-like pattern with useEffect would be better, but for simplicity:
-    (window as any).__cacheFreshnessCleanup = cleanup;
-  }
+    const intervalId = setInterval(() => {
+      refreshRelativeTime();
+    }, 30000);
+    return () => clearInterval(intervalId);
+  }, [refreshRelativeTime]);
 
   const isStale = lastRefreshedAt 
     ? Date.now() - new Date(lastRefreshedAt).getTime() > staleThresholdMs
@@ -93,7 +83,6 @@ export function CacheFreshnessIndicator({
   const handleRefresh = async () => {
     await onRefresh();
     refreshRelativeTime();
-    forceUpdate(prev => ({ ...prev }));
   };
 
   if (variant === "compact") {

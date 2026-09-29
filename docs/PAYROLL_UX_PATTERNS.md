@@ -571,6 +571,28 @@ These are warnings, not blockers: the new owner has a read-only role (auditor or
 - **Duplicate Prevention:** Checks case-insensitive matches against existing approver list (`"Duplicate approver address or identifier already exists."`).
 - **Privacy Enforcement:** All error messages and UI controls omit sensitive payroll data (salaries, employee names, payment amounts).
 
+## #596 — Dashboard Payout Destination Change Review
+
+**Goal:** Provide an interactive review surface for employee payout destination updates before payroll execution, preventing unauthorized, invalid, or conflicting destination changes without exposing sensitive employee PII or financial amounts.
+
+### Files
+
+| File | Purpose |
+| --- | --- |
+| `lib/validation/payoutDestination.ts` | Pure validation rules (`validatePayoutDestinationChangeApproval`, `validatePayoutDestinationChangeRejection`, `validateDestinationAddress`). |
+| `src/payroll/payoutDestinationReview.ts` | Domain helpers (`evaluatePayoutDestinationChange`, reason code labels, masked evaluation). |
+| `components/review/WalletChangeReviewCard.tsx` | Interactive review card supporting single-employee drawer mode and dashboard-wide pending reviews overview. |
+| `components/review/PayoutDestinationChangeReview.tsx` | Convenient export of the review interface. |
+| `__tests__/payout-destination-change-review.test.tsx` | Unit and component tests covering approval validation, rejection constraints, masked rendering, and actionable error alerts. |
+
+### Validation Rules & Privacy Guarantees
+
+- **Format Validation:** Destination addresses must start with `G` and consist of alphanumeric characters (12-56 characters).
+- **No Unchanged Addresses:** Blocks approval if the new destination is identical to the previous destination.
+- **Cooldown Lock Enforcement:** Blocks approval if the employee is currently subject to an active wallet rotation cooldown.
+- **Rejection Constraints:** Requires a non-empty explanation of at least 5 characters (maximum 300 characters).
+- **Privacy Enforcement:** All Stellar addresses are masked (`GDQP2K…4W37`). No salary figures, employee PII, or commitment hashes are displayed or logged in error messages.
+
 ## Test coverage summary
 
 | #510 | `payroll-preflight-results-screen.test.tsx` | Renders readiness score, blocker cards, warnings, passed checks, and dry-run summary | Disables execution button when blockers exist; enables fix actions and re-run dry run |
@@ -578,12 +600,10 @@ These are warnings, not blockers: the new owner has a read-only role (auditor or
 | #514 | `payroll-cancellation-reason-selector.test.tsx` | Enforces selecting documented cancellation reason before confirming cancellation | Provides helper text and custom audit notes input; disables confirmation until reason selected |
 | #515 | `audit-grant-scope-details-drawer.test.tsx` | Displays auditor identity, expiry indicator, accessible scopes, restricted scopes, and masking tier | Triggers extend, revoke, and export scope callbacks |
 | #536 | `DelegatedApproverPanel.test.tsx` | Renders panel, adds valid approver, rejects duplicates/invalid inputs with clear error, removes approver, and enforces zero sensitive payroll data exposure |
+| #596 | `payout-destination-change-review.test.tsx` | Validates approval criteria, blocks invalid addresses / identical addresses / active cooldowns, validates rejection reasons, displays masked addresses, renders dashboard mode |
 
 Run with:
 
 ```bash
 npm test
 ```
-
-
-

@@ -138,7 +138,7 @@ export function TransactionFeeEstimate({
               </div>
             </div>
             <p className="mt-2 text-xs text-blue-600">
-              Stellar network fees are paid in XLM and are typically very low (< $0.01 for most payroll runs).
+              Stellar network fees are paid in XLM and are typically very low (&lt; $0.01 for most payroll runs).
               The fee scales with the number of payment operations in the batch.
             </p>
           </div>
