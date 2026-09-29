@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Dashboard payout destination change review (#596)**: Interactive review component and validation rules for reviewing, confirming, or rejecting employee payout destination changes in the dashboard layer of ZK Payroll
+  - Address verification prevents confirming invalid Stellar address formats or unchanged addresses matching the previous destination
+  - Cooldown guardrail enforces wallet rotation cooldown lock to prevent destination changes mid-cooldown
+  - Actionable feedback displays clear error banners (`role="alert"`) and inline validation when confirming or rejecting requests
+  - Rejection validation requires an explicit rationale of at least 5 characters with maximum length bounds
+  - Dual-mode interface: single-employee drawer review and dashboard-wide overview of all pending destination changes
+  - Zero PII / salary leakage: Stellar addresses remain masked (`GDQP2K…4W37`) and financial details are never rendered or logged
+  - New modules: `src/payroll/payoutDestinationReview.ts`, `components/review/PayoutDestinationChangeReview.tsx`, `components/features/payroll/PayoutDestinationChangeReview.tsx`
+
 - **Payroll instruction version badge** (#534): The payroll wizard now shows which payroll instruction (compiled policy payload) governs the run
   - The review and confirmation steps render a version pill next to the "Payroll instructions" label, comparing the version snapshotted when the draft started against the currently saved policy version
   - Indigo `vN` when the draft matches the active policy; amber `vN · drafted` with a tooltip when a newer policy version was saved mid-run — the run keeps its drafted version instead of silently adopting new rules, and the tooltip names the remediation (start a new draft)

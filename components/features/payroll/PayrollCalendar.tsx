@@ -347,7 +347,6 @@ function PayrollCalendar({ runs = MOCK_PAYROLL_RUNS }: PayrollCalendarProps) {
     setViewDate((current) =>
       new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() + delta, 1)),
     );
-    setViewDate((current) => new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() + delta, 1)));
   };
 
 

@@ -140,3 +140,134 @@ export function validatePayoutDestinations(
 
   return { rowErrors, duplicateAddresses, isValid };
 }
+
+// ─── Payout Destination Change Review Validation (#596) ─────────────────────────
+
+/**
+ * Validates a destination address for change review.
+ * Accepts Stellar public addresses (starting with G, uppercase alphanumeric, 12 to 56 characters).
+ */
+export function validateDestinationAddress(address: string): string | null {
+  const trimmed = address.trim();
+  if (!trimmed) {
+    return "Destination address is required.";
+  }
+  if (!trimmed.startsWith("G") && !trimmed.startsWith("g")) {
+    return "Invalid destination address format. Stellar public addresses must start with G.";
+  }
+  if (!/^G[A-Z0-9]{11,55}$/i.test(trimmed)) {
+    return "Invalid destination address format. Must be an alphanumeric Stellar address (12-56 characters).";
+  }
+  return null;
+}
+
+export interface PayoutDestinationChangeApprovalInput {
+  status?: string;
+  previousWallet?: string;
+  newWallet?: string;
+  isCooldownActive?: boolean;
+}
+
+export interface PayoutDestinationChangeValidationResult {
+  isValid: boolean;
+  error: string | null;
+}
+
+/**
+ * Validates whether a payout destination change request can be confirmed / approved.
+ *
+ * Enforces:
+ * 1. Request status must be 'pending'.
+ * 2. New destination address must be provided and well-formed.
+ * 3. New destination must differ from the previous destination.
+ * 4. Payout destination must not be locked by an active cooldown.
+ */
+export function validatePayoutDestinationChangeApproval(
+  input: PayoutDestinationChangeApprovalInput,
+): PayoutDestinationChangeValidationResult {
+  if (input.status && input.status !== "pending") {
+    return {
+      isValid: false,
+      error: `Destination change is in '${input.status}' status and cannot be approved.`,
+    };
+  }
+
+  const newWallet = input.newWallet?.trim() || "";
+  if (!newWallet) {
+    return {
+      isValid: false,
+      error: "New destination address is required.",
+    };
+  }
+
+  const addressErr = validateDestinationAddress(newWallet);
+  if (addressErr) {
+    return {
+      isValid: false,
+      error: addressErr,
+    };
+  }
+
+  const prevWallet = input.previousWallet?.trim() || "";
+  if (prevWallet && newWallet.toUpperCase() === prevWallet.toUpperCase()) {
+    return {
+      isValid: false,
+      error: "Cannot confirm destination: New destination address matches the previous destination address.",
+    };
+  }
+
+  if (input.isCooldownActive) {
+    return {
+      isValid: false,
+      error: "Cannot confirm destination: Payout destination is locked while an active wallet rotation cooldown is in progress.",
+    };
+  }
+
+  return { isValid: true, error: null };
+}
+
+/**
+ * Validates a rejection reason when declining a payout destination change.
+ *
+ * Enforces:
+ * 1. Request status must be 'pending'.
+ * 2. Rejection reason must not be empty or whitespace.
+ * 3. Rejection reason must be at least 5 characters.
+ * 4. Rejection reason must not exceed 300 characters.
+ */
+export function validatePayoutDestinationChangeRejection(
+  reason: string,
+  status?: string,
+): PayoutDestinationChangeValidationResult {
+  if (status && status !== "pending") {
+    return {
+      isValid: false,
+      error: `Destination change is in '${status}' status and cannot be rejected.`,
+    };
+  }
+
+  const trimmed = reason.trim();
+  if (!trimmed) {
+    return {
+      isValid: false,
+      error: "Rejection reason is required to reject a payout destination change.",
+    };
+  }
+
+  if (trimmed.length < 5) {
+    return {
+      isValid: false,
+      error: "Rejection reason must be at least 5 characters explaining why the destination was rejected.",
+    };
+  }
+
+  if (trimmed.length > 300) {
+    return {
+      isValid: false,
+      error: "Rejection reason cannot exceed 300 characters.",
+    };
+  }
+
+  return { isValid: true, error: null };
+}
+
