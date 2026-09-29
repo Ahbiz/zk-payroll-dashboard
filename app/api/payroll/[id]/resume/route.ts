@@ -174,7 +174,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
  * payroll figures.  We return `employeeCount` and run metadata only.
  */
 function sanitizeRun(run: PayrollRun): Omit<PayrollRun, "totalAmount"> & { totalAmount: never } {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line no-unused-vars
   const { totalAmount: _omit, ...safe } = run;
   return safe as Omit<PayrollRun, "totalAmount"> & { totalAmount: never };
 }

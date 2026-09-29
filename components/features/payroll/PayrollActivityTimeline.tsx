@@ -446,7 +446,5 @@ export function RefreshablePayrollActivityTimeline(
 
 // tiny helper — avoids importing useState in the JSX above
 function useSafeToggle(): [number, React.Dispatch<React.SetStateAction<number>>] {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useState } = require("react") as typeof import("react");
   return useState<number>(0);
 }

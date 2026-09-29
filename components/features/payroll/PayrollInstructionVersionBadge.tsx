@@ -49,6 +49,7 @@ export function PayrollInstructionVersionBadge({
       data-state={status.state}
       title={status.detail ?? undefined}
       aria-label={`Payroll instructions ${status.label}. ${status.detail}`}
+      role="button"
       className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold cursor-help ${pill}`}
       tabIndex={0}
     >
